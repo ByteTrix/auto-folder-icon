@@ -25,16 +25,18 @@ class ValidationWorker(QThread):
     
     validation_complete = Signal(dict)
     
-    def __init__(self, media_directory: str, tmdb_api_key: str):
+    def __init__(self, media_directory: str, tmdb_api_key: str, anilist_api_key: str = ""):
         super().__init__()
         self.media_directory = media_directory
         self.tmdb_api_key = tmdb_api_key
+        self.anilist_api_key = anilist_api_key
     
     def run(self):
         """Run validation in background."""
         result = {
             'directory_valid': False,
-            'api_key_valid': False,
+            'tmdb_api_key_valid': False,
+            'anilist_api_key_valid': False,
             'directory_stats': {},
             'error_message': ''
         }
@@ -53,7 +55,17 @@ class ValidationWorker(QThread):
             # Validate TMDB API key
             if self.tmdb_api_key:
                 tmdb_client = TMDBClient(self.tmdb_api_key)
-                result['api_key_valid'] = tmdb_client.test_api_key()
+                result['tmdb_api_key_valid'] = tmdb_client.test_api_key()
+            else:
+                result['tmdb_api_key_valid'] = True  # Optional
+            
+            # Validate AniList API key
+            if self.anilist_api_key:
+                from api.anilist_client import AniListClient
+                anilist_client = AniListClient(self.anilist_api_key)
+                result['anilist_api_key_valid'] = anilist_client.test_api_key()
+            else:
+                result['anilist_api_key_valid'] = True  # Optional
             
         except Exception as e:
             result['error_message'] = str(e)
@@ -87,7 +99,7 @@ class SetupDialog(QDialog):
         # Title
         title = QLabel("Welcome to Media Folder Icon Manager")
         title.setStyleSheet("font-size: 18px; font-weight: bold; margin: 10px;")
-        title.setAlignment(Qt.AlignCenter)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
         
         # Description
@@ -191,27 +203,65 @@ class SetupDialog(QDialog):
         info_text.setMaximumHeight(100)
         info_text.setReadOnly(True)
         info_text.setHtml("""
-        <p>To use this application, you need a free API key from TMDB (The Movie Database):</p>
-        <ol>
-        <li>Go to <a href="https://www.themoviedb.org/settings/api">https://www.themoviedb.org/settings/api</a></li>
-        <li>Create a free account if you don't have one</li>
-        <li>Copy your API key and paste it below</li>
-        </ol>
+        <p>To use this application optimally, you can configure API keys for enhanced features:</p>
+        <ul>
+        <li><strong>TMDB:</strong> Required for movie and TV show metadata</li>
+        <li><strong>AniList:</strong> Optional for enhanced anime features (public API works without key)</li>
+        </ul>
         """)
         tmdb_layout.addWidget(info_text)
         
-        api_form = QFormLayout()
+        # TMDB API Key section
+        tmdb_form = QFormLayout()
         self.api_key_edit = QLineEdit()
-        self.api_key_edit.setEchoMode(QLineEdit.Password)
+        self.api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.api_key_edit.setPlaceholderText("Enter your TMDB API key...")
         
-        show_key_check = QCheckBox("Show API key")
+        show_key_check = QCheckBox("Show TMDB API key")
         show_key_check.toggled.connect(self._toggle_api_key_visibility)
         
-        api_form.addRow("TMDB API Key:", self.api_key_edit)
-        api_form.addRow("", show_key_check)
+        tmdb_form.addRow("TMDB API Key:", self.api_key_edit)
+        tmdb_form.addRow("", show_key_check)
         
-        tmdb_layout.addLayout(api_form)
+        # Add TMDB instructions
+        tmdb_instructions = QTextEdit()
+        tmdb_instructions.setMaximumHeight(80)
+        tmdb_instructions.setReadOnly(True)
+        tmdb_instructions.setHtml("""
+        <small>Get your free TMDB API key from: 
+        <a href="https://www.themoviedb.org/settings/api">https://www.themoviedb.org/settings/api</a></small>
+        """)
+        tmdb_form.addRow("", tmdb_instructions)
+        
+        tmdb_layout.addLayout(tmdb_form)
+        
+        # AniList API Key section
+        anilist_group = QGroupBox("AniList Configuration (Optional)")
+        anilist_layout = QVBoxLayout(anilist_group)
+        
+        anilist_form = QFormLayout()
+        self.anilist_api_key_edit = QLineEdit()
+        self.anilist_api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.anilist_api_key_edit.setPlaceholderText("Enter your AniList API key (optional)...")
+        
+        show_anilist_key_check = QCheckBox("Show AniList API key")
+        show_anilist_key_check.toggled.connect(self._toggle_anilist_api_key_visibility)
+        
+        anilist_form.addRow("AniList API Key:", self.anilist_api_key_edit)
+        anilist_form.addRow("", show_anilist_key_check)
+        
+        # Add AniList instructions
+        anilist_instructions = QTextEdit()
+        anilist_instructions.setMaximumHeight(80)
+        anilist_instructions.setReadOnly(True)
+        anilist_instructions.setHtml("""
+        <small>AniList API key is optional. The app works with public API, but authenticated requests provide more features. 
+        Get your key from: <a href="https://anilist.co/settings/developer">https://anilist.co/settings/developer</a></small>
+        """)
+        anilist_form.addRow("", anilist_instructions)
+        
+        anilist_layout.addLayout(anilist_form)
+        layout.addWidget(anilist_group)
         layout.addWidget(tmdb_group)
         
         layout.addStretch()
@@ -268,6 +318,7 @@ class SetupDialog(QDialog):
         """Connect UI signals."""
         self.directory_edit.textChanged.connect(self._on_settings_changed)
         self.api_key_edit.textChanged.connect(self._on_settings_changed)
+        self.anilist_api_key_edit.textChanged.connect(self._on_settings_changed)
         self.frequency_spin.valueChanged.connect(self._on_settings_changed)
     
     def _browse_directory(self):
@@ -275,15 +326,18 @@ class SetupDialog(QDialog):
         directory = QFileDialog.getExistingDirectory(
             self,
             "Select Media Directory",
-            self.directory_edit.text() or str(Path.home())
-        )
+            self.directory_edit.text() or str(Path.home())        )
         
         if directory:
             self.directory_edit.setText(directory)
     
     def _toggle_api_key_visibility(self, show: bool):
-        """Toggle API key visibility."""
-        self.api_key_edit.setEchoMode(QLineEdit.Normal if show else QLineEdit.Password)
+        """Toggle TMDB API key visibility."""
+        self.api_key_edit.setEchoMode(QLineEdit.EchoMode.Normal if show else QLineEdit.EchoMode.Password)
+    
+    def _toggle_anilist_api_key_visibility(self, show: bool):
+        """Toggle AniList API key visibility."""
+        self.anilist_api_key_edit.setEchoMode(QLineEdit.EchoMode.Normal if show else QLineEdit.EchoMode.Password)
     
     def _on_settings_changed(self):
         """Handle settings change."""
@@ -295,20 +349,17 @@ class SetupDialog(QDialog):
         """Validate the current settings."""
         directory = self.directory_edit.text().strip()
         api_key = self.api_key_edit.text().strip()
+        anilist_api_key = self.anilist_api_key_edit.text().strip()
         
         if not directory:
             QMessageBox.warning(self, "Validation Error", "Please select a media directory.")
-            return
-        
-        if not api_key:
-            QMessageBox.warning(self, "Validation Error", "Please enter your TMDB API key.")
             return
         
         # Start validation in background
         self.validate_button.setEnabled(False)
         self.validate_button.setText("Validating...")
         
-        self.validation_worker = ValidationWorker(directory, api_key)
+        self.validation_worker = ValidationWorker(directory, api_key, anilist_api_key)
         self.validation_worker.validation_complete.connect(self._on_validation_complete)
         self.validation_worker.start()
     
@@ -317,13 +368,29 @@ class SetupDialog(QDialog):
         self.validate_button.setEnabled(True)
         self.validate_button.setText("Validate Settings")
         
-        if result['directory_valid'] and result['api_key_valid']:
-            # Success
+        if result['directory_valid']:
+            # Success - directory is valid
             stats = result.get('directory_stats', {})
-            message = f"✅ Configuration valid!\n\nDirectory stats:\n"
+            message = "✅ Validation successful!\n\n"
+            message += f"Directory: {self.directory_edit.text()}\n"
             message += f"• Video files: {stats.get('video_files', 0)}\n"
             message += f"• TV show folders: {stats.get('tv_folders', 0)}\n"
-            message += f"• Total folders: {stats.get('total_folders', 0)}"
+            message += f"• Total folders: {stats.get('total_folders', 0)}\n\n"
+            
+            # Add API key validation results
+            if result['tmdb_api_key_valid']:
+                message += "✅ TMDB API key: Valid\n"
+            elif self.api_key_edit.text().strip():
+                message += "❌ TMDB API key: Invalid\n"
+            else:
+                message += "⚠️ TMDB API key: Not provided (some features will be limited)\n"
+            
+            if result['anilist_api_key_valid']:
+                message += "✅ AniList API key: Valid\n"
+            elif self.anilist_api_key_edit.text().strip():
+                message += "❌ AniList API key: Invalid\n"
+            else:
+                message += "✅ AniList API key: Not required (using public API)\n"
             
             self.validation_label.setText(message)
             self.validation_label.setStyleSheet("margin: 10px; color: green;")
@@ -334,8 +401,10 @@ class SetupDialog(QDialog):
             errors = []
             if not result['directory_valid']:
                 errors.append(f"Directory: {result.get('error_message', 'Invalid directory')}")
-            if not result['api_key_valid']:
-                errors.append("API Key: Invalid or expired")
+            if not result['tmdb_api_key_valid'] and self.api_key_edit.text().strip():
+                errors.append("TMDB API Key: Invalid or expired")
+            if not result['anilist_api_key_valid'] and self.anilist_api_key_edit.text().strip():
+                errors.append("AniList API Key: Invalid or expired")
             
             message = f"❌ Validation failed:\n" + "\n".join(f"• {error}" for error in errors)
             self.validation_label.setText(message)
@@ -344,12 +413,12 @@ class SetupDialog(QDialog):
     
     def _save_and_accept(self):
         """Save settings and accept dialog."""
-        try:
-            # Update settings
+        try:            # Update settings
             self.settings.media_directory = self.directory_edit.text().strip()
             self.settings.scan_frequency = self.frequency_spin.value()
             self.settings.tray_mode = self.tray_mode_check.isChecked()
             self.settings.api_keys.tmdb = self.api_key_edit.text().strip()
+            self.settings.api_keys.anilist = self.anilist_api_key_edit.text().strip()
             
             # Update features
             self.settings.features.tv_shows = self.tv_shows_check.isChecked()
@@ -373,9 +442,11 @@ class SetupDialog(QDialog):
             
             if existing_settings.media_directory:
                 self.directory_edit.setText(existing_settings.media_directory)
-            
-            if existing_settings.api_keys.tmdb:
+              if existing_settings.api_keys.tmdb:
                 self.api_key_edit.setText(existing_settings.api_keys.tmdb)
+            
+            if existing_settings.api_keys.anilist:
+                self.anilist_api_key_edit.setText(existing_settings.api_keys.anilist)
             
             self.frequency_spin.setValue(existing_settings.scan_frequency)
             self.tray_mode_check.setChecked(existing_settings.tray_mode)

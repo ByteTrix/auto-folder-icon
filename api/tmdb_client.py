@@ -59,7 +59,36 @@ class TMDBClient:
             logger.warning(f"TMDB API not accessible: {e}")
             logger.info("Application will continue without TMDB features")
     
-    def _make_request(self, endpoint: str, params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
+    def test_api_key(self) -> bool:
+        """
+        Test if the provided API key is valid.
+        
+        Returns:
+            True if API key is valid, False otherwise
+        """
+        try:
+            # Use a simple endpoint to test the API key
+            response = requests.get(
+                f"{self.BASE_URL}configuration",
+                params={'api_key': self.api_key},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                logger.info("TMDB API key validation successful")
+                return True
+            elif response.status_code == 401:
+                logger.error("TMDB API key is invalid")
+                return False
+            else:
+                logger.error(f"TMDB API key test failed with status {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"TMDB API key test failed: {e}")
+            return False
+
+    def _make_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
         Make API request to TMDB.
         
@@ -93,12 +122,11 @@ class TMDBClient:
             year: Release year (optional)
             
         Returns:
-            Movie data or None if not found
-        """
+            Movie data or None if not found        """
         if not self.is_available:
             return None
             
-        params = {'query': title}
+        params: Dict[str, Any] = {'query': title}
         if year:
             params['year'] = year
         
@@ -120,10 +148,11 @@ class TMDBClient:
         Returns:
             TV show data or None if not found
         """
+        
         if not self.is_available:
             return None
             
-        params = {'query': title}
+        params: Dict[str, Any] = {'query': title}
         if year:
             params['first_air_date_year'] = year
         

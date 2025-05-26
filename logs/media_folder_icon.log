@@ -8,3 +8,9 @@
 2025-05-25 16:33:33 - utils.logger - INFO - Logging initialized
 2025-05-25 16:33:33 - offline_test - INFO - Testing offline mode
 2025-05-25 16:33:33 - config.settings - INFO - Settings saved to D:\webdev projects\flutter_folder_icon\config\config.json
+2025-05-26 12:13:23 - utils.logger - INFO - Logging initialized
+2025-05-26 12:13:23 - __main__ - INFO - Starting Media Folder Icon Manager
+2025-05-26 12:13:23 - __main__ - INFO - First run detected, showing setup dialog
+2025-05-26 15:18:57 - utils.logger - INFO - Logging initialized
+2025-05-26 15:18:57 - __main__ - INFO - Starting Media Folder Icon Manager
+2025-05-26 15:18:58 - __main__ - INFO - First run detected, showing setup dialog

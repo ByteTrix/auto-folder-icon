@@ -12,10 +12,15 @@ from pydantic import BaseModel, Field, validator
 class APIKeys(BaseModel):
     """API keys configuration."""
     tmdb: Optional[str] = None
+    anilist: Optional[str] = None
     
     def is_tmdb_configured(self) -> bool:
         """Check if TMDB API key is configured."""
         return self.tmdb is not None and len(self.tmdb.strip()) > 0
+    
+    def is_anilist_configured(self) -> bool:
+        """Check if AniList API key is configured."""
+        return self.anilist is not None and len(self.anilist.strip()) > 0
 
 
 class Features(BaseModel):

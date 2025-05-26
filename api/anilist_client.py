@@ -15,16 +15,73 @@ class AniListClient:
     
     API_URL = "https://graphql.anilist.co"
     
-    def __init__(self):
-        """Initialize AniList client."""
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        Initialize AniList client.
+        
+        Args:
+            api_key: Optional AniList API key for authenticated requests
+        """
+        self.api_key = api_key
         self.session = requests.Session()
-        self.session.headers.update({
+        
+        headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'User-Agent': 'Media-Folder-Icon-Manager/1.0'
-        })
+        }
+        
+        # Add authorization header if API key is provided
+        if api_key:
+            headers['Authorization'] = f'Bearer {api_key}'
+            
+        self.session.headers.update(headers)
     
-    def _make_query(self, query: str, variables: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
+    def test_api_key(self) -> bool:
+        """
+        Test if the provided API key is valid (if provided).
+        
+        Returns:
+            True if API key is valid or not required, False if invalid
+        """
+        if not self.api_key:
+            # AniList public API doesn't require authentication
+            return True
+            
+        try:
+            # Test with a simple query
+            query = """
+            query {
+                Viewer {
+                    id
+                    name
+                }
+            }
+            """
+            
+            response = self.session.post(
+                self.API_URL,
+                json={'query': query},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if 'errors' not in data:
+                    logger.info("AniList API key validation successful")
+                    return True
+                else:
+                    logger.error(f"AniList API key validation failed: {data['errors']}")
+                    return False
+            else:
+                logger.error(f"AniList API key test failed with status {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"AniList API key test failed: {e}")
+            return False
+    
+    def _make_query(self, query: str, variables: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
         Make GraphQL query to AniList.
         
@@ -88,10 +145,9 @@ class AniListClient:
                 genres
                 averageScore
             }
-        }
-        '''
+        }        '''
         
-        variables = {'search': title}
+        variables: Dict[str, Any] = {'search': title}
         if year:
             variables['seasonYear'] = year
         
