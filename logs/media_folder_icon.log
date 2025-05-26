@@ -1,0 +1,10 @@
+2025-05-25 16:04:58 - utils.logger - INFO - Logging initialized
+2025-05-25 16:04:58 - __main__ - INFO - Starting Media Folder Icon Manager
+2025-05-25 16:04:58 - __main__ - INFO - First run detected, showing setup dialog
+2025-05-25 16:26:09 - core.scanner - INFO - Quick scan of: D:\testing
+2025-05-25 16:26:30 - api.tmdb_client - ERROR - TMDB API request failed for configuration: HTTPSConnectionPool(host='api.themoviedb.org', port=443): Max retries exceeded with url: /3/configuration?api_key=2ad5fc1798e96a4e2e21e65f4763b157 (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000002069176DD60>, 'Connection to api.themoviedb.org timed out. (connect timeout=30)'))
+2025-05-25 16:32:57 - core.scanner - INFO - Quick scan of: D:\testing
+2025-05-25 16:33:18 - api.tmdb_client - ERROR - TMDB API request failed for configuration: HTTPSConnectionPool(host='api.themoviedb.org', port=443): Max retries exceeded with url: /3/configuration?api_key=2ad5fc1798e96a4e2e21e65f4763b157 (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000002069176E780>, 'Connection to api.themoviedb.org timed out. (connect timeout=30)'))
+2025-05-25 16:33:33 - utils.logger - INFO - Logging initialized
+2025-05-25 16:33:33 - offline_test - INFO - Testing offline mode
+2025-05-25 16:33:33 - config.settings - INFO - Settings saved to D:\webdev projects\flutter_folder_icon\config\config.json

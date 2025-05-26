@@ -1,0 +1,14 @@
+{
+  "media_directory": null,
+  "tray_mode": true,
+  "scan_frequency": 24,
+  "api_keys": {
+    "tmdb": null
+  },
+  "features": {
+    "tv_shows": true,
+    "movies": true,
+    "anime": false
+  },
+  "last_scan": null
+}
