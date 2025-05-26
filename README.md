@@ -1,4 +1,4 @@
-# Media Folder Icon Manager
+# Auto Folder Icon Manager
 
 A Python-based Windows application that automatically sets folder icons for TV Shows and Anime, and embeds poster thumbnails in movie files.
 
@@ -38,7 +38,7 @@ A Python-based Windows application that automatically sets folder icons for TV S
 ## Project Structure
 
 ```
-media_folder_icon_manager/
+auto-folder-icon/
 ├── main.py                 # Application entry point
 ├── requirements.txt        # Python dependencies
 ├── config/
